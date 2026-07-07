@@ -171,9 +171,30 @@ header{position:relative;z-index:1000;flex-shrink:0;
 .pop-sec-b{font-size:.71rem;color:var(--ink2);line-height:1.5}
 .pop-sec.scene .pop-sec-h{color:var(--red-d)}
 
-/* 카드 안 상세 섹션 (구 오버레이 내용을 카드로 이동) */
+/* 카드 안 상세 섹션 (데스크톱: 인라인 / 모바일: 숨김 → 더보기 시트) */
 .sc-detail{margin-top:.55rem;padding-top:.55rem;border-top:1px dashed var(--tan-d)}
 .sc-transit-inline{display:none}   /* 모바일 캐러셀에서만 노출 */
+.sc-more{display:none;width:100%;margin-top:.5rem;padding:.4rem;cursor:none;
+  background:var(--paper-2);color:var(--green-d);border:1px solid var(--tan-d);border-radius:5px;
+  font-family:var(--font);font-size:.7rem;font-weight:700}
+.sc-more:active{background:var(--tan)}
+
+/* 하단 시트 (모바일 "더보기") */
+#sheet-scrim{position:fixed;inset:0;background:rgba(31,24,12,.4);z-index:1490;opacity:0;
+  pointer-events:none;transition:opacity .22s ease}
+#sheet-scrim.show{opacity:1;pointer-events:auto}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:1500;
+  background:var(--card);border-radius:18px 18px 0 0;box-shadow:0 -8px 30px rgba(31,24,12,.28);
+  transform:translateY(100%);transition:transform .28s cubic-bezier(.22,1,.36,1);
+  max-height:78dvh;overflow-y:auto;padding:.4rem 1.1rem calc(1.2rem + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling:touch}
+#sheet.show{transform:none}
+.sheet-grip{width:40px;height:4px;border-radius:2px;background:var(--tan-d);margin:.55rem auto .2rem}
+.sheet-close{position:sticky;top:0;float:right;margin:-.2rem -.3rem .2rem 0;padding:.3rem .6rem;cursor:none;
+  background:rgba(31,24,12,.5);color:#fff;border:none;border-radius:20px;font-size:.66rem;font-weight:700;font-family:var(--font)}
+.sheet-title{display:flex;align-items:center;gap:.45rem;font-size:.98rem;font-weight:800;color:var(--ink);
+  margin:.2rem 0 .3rem;line-height:1.25}
+.sheet-title .sheet-jp{font-size:.66rem;font-weight:600;color:var(--ink3)}
 
 /* 스즈메 커서 — 마우스를 따라다님 */
 #suzume-cursor{position:fixed;top:0;left:0;width:46px;height:46px;border-radius:50%;
@@ -221,11 +242,10 @@ header{position:relative;z-index:1000;flex-shrink:0;
   .accom-card{flex:0 0 88vw;max-width:420px;height:auto;overflow:visible;scroll-snap-align:center;margin-left:.7rem}
   .sc-transit-inline{display:flex;align-items:center;gap:.35rem;
     font-size:.66rem;color:var(--ink3);font-weight:600;margin-bottom:.35rem}
-  .sc-img{height:132px}.sc-img img{height:132px}
-  .sc-body{padding:.6rem .75rem .65rem}
-  .sc-detail{margin-top:.45rem;padding-top:.45rem}
-  .pop-sec{margin-top:.42rem}
-  .pop-sec-b{font-size:.69rem;line-height:1.42}
+  .sc-img{height:156px}.sc-img img{height:156px}
+  .sc-body{padding:.65rem .8rem .7rem}
+  .sc-detail{display:none}          /* 모바일: 인라인 상세 숨김 → 더보기 시트로 */
+  .sc-more{display:block}           /* 더보기 버튼 노출 */
 }
 @media (max-width:768px) and (orientation:landscape){
   #map{height:52vh;height:52dvh}
@@ -254,6 +274,12 @@ header{position:relative;z-index:1000;flex-shrink:0;
     <div class="status-banner" id="statusBanner"></div>
     <div class="itinerary" id="itinerary"></div>
   </div>
+</div>
+<div id="sheet-scrim"></div>
+<div id="sheet" role="dialog" aria-modal="true">
+  <div class="sheet-grip"></div>
+  <button id="sheetClose" class="sheet-close" aria-label="닫기">✕ 닫기</button>
+  <div id="sheetBody"></div>
 </div>
 <div id="suzume-cursor"></div>
 <div id="suzume-dot"></div>
@@ -450,6 +476,24 @@ function focusStop(s){
   if(map && s._ll){ map.panTo(s._ll); map.setZoom(Math.max(map.getZoom()||0,16)); }
 }
 
+/* 하단 시트 — "더보기"로 장면·장소·현장 표시 (모바일) */
+function openSheet(id){
+  const s=STOPS.find(x=>x.id===id); if(!s) return;
+  const body=document.getElementById('sheetBody');
+  if(body) body.innerHTML=`<div class="sheet-title"><span class="sc-num ${s.numCls}">${s.num}</span>${s.name} <span class="sheet-jp">${s.jp}</span></div>${detailInner(s)}`;
+  document.getElementById('sheet')?.classList.add('show');
+  document.getElementById('sheet-scrim')?.classList.add('show');
+}
+function closeSheet(){
+  document.getElementById('sheet')?.classList.remove('show');
+  document.getElementById('sheet-scrim')?.classList.remove('show');
+}
+(function(){
+  document.getElementById('sheetClose')?.addEventListener('click',closeSheet);
+  document.getElementById('sheet-scrim')?.addEventListener('click',closeSheet);
+  addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheet(); });
+})();
+
 function defineHtmlMarker(OverlayView){
   return class HtmlMarker extends OverlayView{
     constructor(pos,html,onClick){super();this.pos=pos;this.html=html;this.onClick=onClick;}
@@ -468,13 +512,39 @@ function defineHtmlMarker(OverlayView){
   };
 }
 
-/* 카드에 들어갈 상세 섹션(🎬 장면 / 📍 장소 / 👁 현장) */
-function detailSectionsHtml(s){
+/* 상세 섹션(🎬 장면 / 📍 장소 / 👁 현장) — 카드 인라인(데스크톱) & 하단 시트(모바일) 공용 */
+function detailInner(s){
   const d=DETAIL[s.id]||{};
   const sec=(cls,h,b)=>b?`<div class="pop-sec ${cls}"><span class="pop-sec-h">${h}</span><div class="pop-sec-b">${b}</div></div>`:'';
-  const inner=sec('scene','🎬 어떤 장면',d.scene)+sec('','📍 어떤 장소',d.place)+sec('','👁 현장 모습',d.view);
+  return sec('scene','🎬 어떤 장면',d.scene)+sec('','📍 어떤 장소',d.place)+sec('','👁 현장 모습',d.view);
+}
+function detailSectionsHtml(s){
+  const inner=detailInner(s);
   return inner?`<div class="sc-detail">${inner}</div>`:'';
 }
+
+/* 웜톤 지도 스타일 (파란 물 → 세이지/세피아, 크림 육지) */
+const WARM_MAP=[
+  {elementType:'geometry',stylers:[{color:'#ece2cb'}]},
+  {elementType:'labels.text.fill',stylers:[{color:'#6b5d43'}]},
+  {elementType:'labels.text.stroke',stylers:[{color:'#f4eedd'},{weight:2}]},
+  {featureType:'landscape.natural',elementType:'geometry',stylers:[{color:'#e6dcc2'}]},
+  {featureType:'poi',elementType:'geometry',stylers:[{color:'#e2d8bf'}]},
+  {featureType:'poi',elementType:'labels.text.fill',stylers:[{color:'#8a7a58'}]},
+  {featureType:'poi.park',elementType:'geometry',stylers:[{color:'#cdd9b0'}]},
+  {featureType:'poi.park',elementType:'labels.text.fill',stylers:[{color:'#5d7544'}]},
+  {featureType:'road',elementType:'geometry',stylers:[{color:'#f7f1e2'}]},
+  {featureType:'road',elementType:'geometry.stroke',stylers:[{color:'#e0d4b6'}]},
+  {featureType:'road',elementType:'labels.text.fill',stylers:[{color:'#9b8a63'}]},
+  {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#f0dcac'}]},
+  {featureType:'road.highway',elementType:'geometry.stroke',stylers:[{color:'#dcc689'}]},
+  {featureType:'transit',elementType:'geometry',stylers:[{color:'#ddd0b4'}]},
+  {featureType:'transit.station',elementType:'labels.text.fill',stylers:[{color:'#8a7a58'}]},
+  {featureType:'administrative',elementType:'geometry.stroke',stylers:[{color:'#c9ba94'}]},
+  {featureType:'administrative.land_parcel',stylers:[{visibility:'off'}]},
+  {featureType:'water',elementType:'geometry',stylers:[{color:'#b7ccc3'}]},
+  {featureType:'water',elementType:'labels.text.fill',stylers:[{color:'#7c9089'}]}
+];
 
 async function initMap(){
   const {Map,InfoWindow,OverlayView}=await google.maps.importLibrary('maps');
@@ -482,7 +552,7 @@ async function initMap(){
   const HtmlMarker=defineHtmlMarker(OverlayView);
 
   map=new Map(document.getElementById('map'),{
-    center:{lat:35.30,lng:139.70}, zoom:10,
+    center:{lat:35.30,lng:139.70}, zoom:10, styles:WARM_MAP,
     zoomControl:true, zoomControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM},
     mapTypeControl:false, streetViewControl:false, fullscreenControl:false, gestureHandling:'greedy'
   });
@@ -548,10 +618,12 @@ function buildSidebar(){
         ${tagsHtml?`<div class="sc-tags">${tagsHtml}</div>`:''}
         ${s.food?`<div class="sc-food">${s.food}</div>`:''}
         ${detailSectionsHtml(s)}
+        <button class="sc-more" type="button">🎬 장면·장소 자세히 보기</button>
         <a class="sc-maplink" href="${s.gmapUrl}" target="_blank" rel="noopener">📍 구글맵에서 열기</a>
       </div>`;
+    card.querySelector('.sc-more')?.addEventListener('click',e=>{ e.stopPropagation(); openSheet(s.id); });
     card.addEventListener('click',e=>{
-      if(e.target.tagName==='A'||e.target.closest('a')) return;
+      if(e.target.tagName==='A'||e.target.closest('a')||e.target.closest('.sc-more')) return;
       focusStop(s);
     });
     itin.appendChild(card);
