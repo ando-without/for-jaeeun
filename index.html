@@ -241,16 +241,19 @@ header{position:relative;z-index:1000;flex-shrink:0;
     scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .itinerary::-webkit-scrollbar{display:none}
   .transit-connector{display:none}                   /* 가로에선 연결선 숨김(카드 안 인라인으로 대체) */
-  .itinerary>.stop-card{flex:0 0 88vw;max-width:420px;height:auto;overflow:visible;  /* 세로 스크롤 X — 자연 높이 */
+  .itinerary>.stop-card{flex:0 0 88vw;max-width:420px;height:auto;overflow:visible;  /* 세로 스크롤 X */
+    display:flex;flex-direction:column;                             /* CTA 바닥 고정용 */
     scroll-snap-align:center;margin-right:.7rem}
   .itinerary>.stop-card:last-of-type{margin-right:0}
+  .stop-card .sc-time-bar,.stop-card .sc-img{flex-shrink:0}
   .accom-card{flex:0 0 88vw;max-width:420px;height:auto;overflow:visible;scroll-snap-align:center;margin-left:.7rem}
   .sc-transit-inline{display:flex;align-items:center;gap:.35rem;
     font-size:.66rem;color:var(--ink3);font-weight:600;margin-bottom:.35rem}
   .sc-img{height:156px}.sc-img img{height:156px}
-  .sc-body{padding:.65rem .8rem .7rem}
+  .sc-body{display:flex;flex-direction:column;flex:1;min-height:0;padding:.65rem .8rem .7rem}
   .sc-detail{display:none}          /* 모바일: 인라인 상세 숨김 → 더보기 시트로 */
   .sc-more{display:flex;align-items:center;justify-content:center}  /* 더보기 버튼 노출 */
+  .sc-actions{margin-top:auto}      /* CTA를 카드 바닥에 고정 (내용 짧아도 아래로) */
   .sc-actions .sc-maplink{flex:1;justify-content:center}            /* 자세히 보기 / 구글맵 반반 */
 }
 @media (max-width:768px) and (orientation:landscape){
