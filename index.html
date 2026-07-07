@@ -235,7 +235,7 @@ header{position:relative;z-index:1000;flex-shrink:0;
   .stop-card:hover{transform:none}                   /* 터치엔 호버 이동 불필요 */
 
   /* ===== 리스트 → 가로 스와이프 캐러셀 (가로 스크롤만, 세로 스크롤 없음) ===== */
-  .itinerary{flex:none;flex-direction:row;align-items:flex-start;overflow-x:auto;overflow-y:hidden;gap:0;
+  .itinerary{flex:none;flex-direction:row;align-items:stretch;overflow-x:auto;overflow-y:hidden;gap:0;
     padding:.5rem calc(.7rem + env(safe-area-inset-right)) calc(.5rem + env(safe-area-inset-bottom)) calc(.7rem + env(safe-area-inset-left));
     scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .itinerary::-webkit-scrollbar{display:none}
